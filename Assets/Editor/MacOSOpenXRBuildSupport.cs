@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using TiltBrush;
 using UnityEditor;
 
 /// <summary>
