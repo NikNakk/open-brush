@@ -18,6 +18,7 @@ using System.Linq;
 using System.Reflection;
 using TiltBrush;
 using UnityEditor;
+using UnityEditor.XR.OpenXR.Features;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
@@ -80,7 +81,7 @@ static class MacOSOpenXRBuildSupport
         int settingsObjects = 0;
         int groupsWithNulls = 0;
         int removedNulls = 0;
-        var processedSettings = new HashSet<int>();
+        var processedSettings = new HashSet<OpenXRSettings>();
 
         foreach (BuildTargetGroup group in Enum.GetValues(typeof(BuildTargetGroup))
                      .Cast<BuildTargetGroup>()
@@ -102,8 +103,9 @@ static class MacOSOpenXRBuildSupport
                 continue;
             }
 
-            int instanceId = settings.GetInstanceID();
-            if (!processedSettings.Add(instanceId))
+            // Unity 6.6 makes Object.GetInstanceID() obsolete-as-error. The settings
+            // ScriptableObject itself is a stable enough identity key for this one editor pass.
+            if (!processedSettings.Add(settings))
             {
                 continue;
             }
