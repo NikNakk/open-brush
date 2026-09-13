@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TiltBrush;
 using UnityEditor;
+using UnityEditor.XR.OpenXR.Features;
+using UnityEngine;
+using UnityEngine.XR.OpenXR;
 
 /// <summary>
 /// Experimental macOS OpenXR build enablement.
@@ -28,7 +33,20 @@ using UnityEditor;
 [InitializeOnLoad]
 static class MacOSOpenXRBuildSupport
 {
+    const string kLogPrefix = "[OpenBrush macOS OpenXR] ";
+
     static MacOSOpenXRBuildSupport()
+    {
+        EnableMacOsOpenXrBuildTarget();
+
+        // OpenXR 1.18's feature refresh assumes every serialized feature reference is
+        // non-null. Open Brush's upgraded settings can contain a missing subasset, which
+        // causes RefreshAllFeatureInfo() to throw before the Standalone OpenXR setup has
+        // been refreshed. Run after the editor has finished loading the package assets.
+        EditorApplication.delayCall += SanitizeStandaloneOpenXrFeatures;
+    }
+
+    static void EnableMacOsOpenXrBuildTarget()
     {
         FieldInfo validTargetsField = typeof(BuildTiltBrush).GetField(
             "kValidSdkTargets",
@@ -39,7 +57,8 @@ static class MacOSOpenXRBuildSupport
 
         if (validTargets == null)
         {
-            UnityEngine.Debug.LogWarning(
+            Debug.LogWarning(
+                kLogPrefix +
                 "Could not enable experimental macOS OpenXR build target: " +
                 "BuildTiltBrush.kValidSdkTargets was not found.");
             return;
@@ -52,6 +71,55 @@ static class MacOSOpenXRBuildSupport
         if (!validTargets.Contains(macOsOpenXr))
         {
             validTargets.Add(macOsOpenXr);
+        }
+    }
+
+    static void SanitizeStandaloneOpenXrFeatures()
+    {
+        OpenXRSettings settings =
+            OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone);
+
+        if (settings == null)
+        {
+            Debug.LogWarning(kLogPrefix + "No Standalone OpenXRSettings asset was found.");
+            return;
+        }
+
+        OpenXRFeature[] features = settings.features;
+        if (features == null)
+        {
+            Debug.LogWarning(kLogPrefix + "Standalone OpenXRSettings.features is null.");
+            return;
+        }
+
+        int nullFeatureCount = features.Count(feature => feature == null);
+        if (nullFeatureCount == 0)
+        {
+            Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
+            return;
+        }
+
+        settings.features = features.Where(feature => feature != null).ToArray();
+        EditorUtility.SetDirty(settings);
+        AssetDatabase.SaveAssets();
+
+        Debug.LogWarning(
+            kLogPrefix +
+            $"Removed {nullFeatureCount} null/missing Standalone OpenXR feature " +
+            $"reference{(nullFeatureCount == 1 ? "" : "s")}; refreshing feature metadata.");
+
+        try
+        {
+            // Let Unity recreate any legitimate feature subassets that are now absent and
+            // update its derived feature metadata using the package's supported API.
+            FeatureHelpers.RefreshFeatures(BuildTargetGroup.Standalone);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                kLogPrefix +
+                "OpenXR feature refresh still failed after removing null references:\n" +
+                exception);
         }
     }
 }
