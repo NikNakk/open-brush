@@ -55,8 +55,6 @@ namespace TiltBrush
 
         private IEnumerator Start()
         {
-            // Let every scene object's Start() finish and allow Unity's graphics device to reach the
-            // point required by XRManagerSettings.InitializeLoaderSync().
             yield return null;
 
             XRGeneralSettings generalSettings = XRGeneralSettings.Instance;
@@ -86,8 +84,7 @@ namespace TiltBrush
 
             if (manager.activeLoader == null)
             {
-                Debug.LogError(
-                    "[OpenBrush XR] LateInit: InitializeLoaderSync returned with activeLoader=<null>.");
+                Debug.LogError("[OpenBrush XR] LateInit: InitializeLoaderSync returned with activeLoader=<null>.");
                 Destroy(gameObject);
                 yield break;
             }
@@ -103,8 +100,6 @@ namespace TiltBrush
 
             if (ShouldDisableMirrorView())
             {
-                // Give the display provider a few frames to become running, then suppress only the
-                // XR mirror blit. The normal macOS player window may still present a drawable.
                 const int maxFramesToWait = 10;
                 var displays = new List<XRDisplaySubsystem>();
                 bool disabledAnyMirror = false;
@@ -120,7 +115,7 @@ namespace TiltBrush
                         disabledAnyMirror = true;
                         Debug.Log(
                             "[OpenBrush XR] Mirror: disabled XR mirror-view blit " +
-                            $"(OPENBRUSH_MACOS_XR_MIRROR={Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable)})."
+                            $"(OPENBRUSH_MACOS_XR_MIRROR={System.Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable)})."
                         );
                     }
 
@@ -139,7 +134,7 @@ namespace TiltBrush
             }
             else
             {
-                string mirrorSetting = Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
+                string mirrorSetting = System.Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
                 Debug.Log(
                     "[OpenBrush XR] Mirror: retaining Unity's normal mirror view; " +
                     $"{kMirrorEnvironmentVariable}={(string.IsNullOrEmpty(mirrorSetting) ? "<unset>" : mirrorSetting)}.");
@@ -150,7 +145,7 @@ namespace TiltBrush
 
         private static bool ShouldDisableMirrorView()
         {
-            string value = Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
+            string value = System.Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(value))
             {
                 return false;
