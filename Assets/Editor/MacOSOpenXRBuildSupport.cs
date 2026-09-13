@@ -21,6 +21,7 @@ using UnityEditor;
 using UnityEditor.XR.OpenXR.Features;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
 
 /// <summary>
 /// Experimental macOS OpenXR build enablement.
