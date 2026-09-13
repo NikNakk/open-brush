@@ -14,14 +14,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using TiltBrush;
 using UnityEditor;
 using UnityEditor.XR.OpenXR.Features;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
-using UnityEngine.XR.OpenXR.Features;
 
 /// <summary>
 /// Experimental macOS OpenXR build enablement.
@@ -86,21 +84,48 @@ static class MacOSOpenXRBuildSupport
             return;
         }
 
-        OpenXRFeature[] features = settings.features;
-        if (features == null)
+        // OpenXRSettings.features is deliberately internal in the package. Use Unity's
+        // serialized editor API rather than depending on package-private implementation
+        // details or reflection to modify the persisted feature array.
+        var serializedSettings = new SerializedObject(settings);
+        SerializedProperty features = serializedSettings.FindProperty("features");
+        if (features == null || !features.isArray)
         {
-            Debug.LogWarning(kLogPrefix + "Standalone OpenXRSettings.features is null.");
+            Debug.LogWarning(
+                kLogPrefix + "Could not find the serialized Standalone OpenXR feature array.");
             return;
         }
 
-        int nullFeatureCount = features.Count(feature => feature == null);
+        int nullFeatureCount = 0;
+        for (int i = features.arraySize - 1; i >= 0; --i)
+        {
+            SerializedProperty feature = features.GetArrayElementAtIndex(i);
+            if (feature.propertyType != SerializedPropertyType.ObjectReference ||
+                feature.objectReferenceValue != null)
+            {
+                continue;
+            }
+
+            ++nullFeatureCount;
+            int sizeBeforeDelete = features.arraySize;
+            features.DeleteArrayElementAtIndex(i);
+
+            // For object-reference arrays Unity can clear a live reference on the first
+            // delete and remove the slot on the second. These entries are already null,
+            // but handle both behaviours so the cleanup is deterministic across versions.
+            if (features.arraySize == sizeBeforeDelete && i < features.arraySize)
+            {
+                features.DeleteArrayElementAtIndex(i);
+            }
+        }
+
         if (nullFeatureCount == 0)
         {
             Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
             return;
         }
 
-        settings.features = features.Where(feature => feature != null).ToArray();
+        serializedSettings.ApplyModifiedProperties();
         EditorUtility.SetDirty(settings);
         AssetDatabase.SaveAssets();
 
