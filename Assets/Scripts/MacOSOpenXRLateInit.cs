@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.XR.Management;
 
 namespace TiltBrush
@@ -29,9 +32,16 @@ namespace TiltBrush
     ///
     /// For the experimental macOS port, retry once on the following frame. This is deliberately
     /// isolated so we can prove the timing issue before changing VrSdk's cross-platform lifecycle.
+    ///
+    /// Set OPENBRUSH_MACOS_XR_MIRROR=0 (or false/off/no) to disable Unity's XR mirror-view blit.
+    /// Leaving the variable unset, or setting it to any other value, preserves Unity's normal
+    /// desktop mirror behaviour. This is an A/B performance diagnostic only: it does not suppress
+    /// the macOS player window or its CAMetalLayer presentation by itself.
     /// </summary>
     internal sealed class MacOSOpenXRLateInit : MonoBehaviour
     {
+        private const string kMirrorEnvironmentVariable = "OPENBRUSH_MACOS_XR_MIRROR";
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
         {
@@ -91,7 +101,71 @@ namespace TiltBrush
                 $"[OpenBrush XR] LateInit: XR subsystems started; " +
                 $"initializationComplete={manager.isInitializationComplete}.");
 
+            if (ShouldDisableMirrorView())
+            {
+                // Give the display provider a few frames to become running, then suppress only the
+                // XR mirror blit. The normal macOS player window may still present a drawable.
+                const int maxFramesToWait = 10;
+                var displays = new List<XRDisplaySubsystem>();
+                bool disabledAnyMirror = false;
+
+                for (int frame = 0; frame < maxFramesToWait && !disabledAnyMirror; ++frame)
+                {
+                    displays.Clear();
+                    SubsystemManager.GetInstances(displays);
+
+                    foreach (XRDisplaySubsystem display in displays.Where(display => display != null && display.running))
+                    {
+                        display.SetPreferredMirrorBlitMode(XRMirrorViewBlitMode.None);
+                        disabledAnyMirror = true;
+                        Debug.Log(
+                            "[OpenBrush XR] Mirror: disabled XR mirror-view blit " +
+                            $"(OPENBRUSH_MACOS_XR_MIRROR={Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable)})."
+                        );
+                    }
+
+                    if (!disabledAnyMirror)
+                    {
+                        yield return null;
+                    }
+                }
+
+                if (!disabledAnyMirror)
+                {
+                    Debug.LogWarning(
+                        "[OpenBrush XR] Mirror: requested mirror disable but no running " +
+                        $"XRDisplaySubsystem was found after {maxFramesToWait} frames.");
+                }
+            }
+            else
+            {
+                string mirrorSetting = Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
+                Debug.Log(
+                    "[OpenBrush XR] Mirror: retaining Unity's normal mirror view; " +
+                    $"{kMirrorEnvironmentVariable}={(string.IsNullOrEmpty(mirrorSetting) ? "<unset>" : mirrorSetting)}.");
+            }
+
             Destroy(gameObject);
+        }
+
+        private static bool ShouldDisableMirrorView()
+        {
+            string value = Environment.GetEnvironmentVariable(kMirrorEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            switch (value.Trim().ToLowerInvariant())
+            {
+                case "0":
+                case "false":
+                case "off":
+                case "no":
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }
