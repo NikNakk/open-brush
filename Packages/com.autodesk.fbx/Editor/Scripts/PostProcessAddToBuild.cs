@@ -61,6 +61,18 @@ namespace Autodesk.Fbx
                 return;
             }
 
+            // Open Brush's embedded Autodesk FBX package currently contains only the
+            // Windows native plugin. Do not make macOS builds fail merely because the
+            // optional FBX SDK native bundle is absent. FBX SDK runtime functionality
+            // will remain unavailable on macOS until a compatible bundle is supplied.
+            if (target == BuildTarget.StandaloneOSX && !Directory.Exists(sourcePath))
+            {
+                Debug.LogWarningFormat(
+                    "FBX SDK native macOS bundle is not present at '{0}'; skipping FBX SDK runtime plugin copy.",
+                    sourcePath);
+                return;
+            }
+
             if (!Directory.Exists(destPath))
             {
                 Directory.CreateDirectory(destPath);
