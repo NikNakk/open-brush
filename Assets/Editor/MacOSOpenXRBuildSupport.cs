@@ -18,7 +18,6 @@ using System.Linq;
 using System.Reflection;
 using TiltBrush;
 using UnityEditor;
-using UnityEditor.XR.OpenXR.Features;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
@@ -40,11 +39,12 @@ static class MacOSOpenXRBuildSupport
     {
         EnableMacOsOpenXrBuildTarget();
 
-        // OpenXR 1.18's feature refresh assumes every feature object it considers is
-        // non-null. Run after the editor has finished loading package assets so we can both
-        // repair persisted missing references and diagnose feature types that Unity itself
-        // cannot instantiate during RefreshAllFeatureInfo().
-        EditorApplication.delayCall += SanitizeStandaloneOpenXrFeatures;
+        // Unity OpenXR 1.18 RefreshAllFeatureInfo() dereferences every feature entry before
+        // it has a chance to filter missing references. Open Brush carries settings for
+        // several build target groups, and packages may refresh groups other than the active
+        // macOS/Standalone one during editor initialisation. Sanitize every settings object
+        // after package assets have loaded.
+        EditorApplication.delayCall += SanitizeAllOpenXrFeatureLists;
     }
 
     static void EnableMacOsOpenXrBuildTarget()
@@ -75,79 +75,108 @@ static class MacOSOpenXRBuildSupport
         }
     }
 
-    static void SanitizeStandaloneOpenXrFeatures()
+    static void SanitizeAllOpenXrFeatureLists()
     {
-        OpenXRSettings settings =
-            OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone);
+        int settingsObjects = 0;
+        int groupsWithNulls = 0;
+        int removedNulls = 0;
+        var processedSettings = new HashSet<int>();
 
-        if (settings == null)
+        foreach (BuildTargetGroup group in Enum.GetValues(typeof(BuildTargetGroup))
+                     .Cast<BuildTargetGroup>()
+                     .Distinct())
         {
-            Debug.LogWarning(kLogPrefix + "No Standalone OpenXRSettings asset was found.");
-            return;
-        }
+            OpenXRSettings settings;
+            try
+            {
+                settings = OpenXRSettings.GetSettingsForBuildTargetGroup(group);
+            }
+            catch
+            {
+                // Some obsolete/unsupported enum values are not meaningful to XR Management.
+                continue;
+            }
 
-        OpenXRFeature[] allFeatures = settings.GetFeatures();
-        OpenXRFeature[] validFeatures = allFeatures.Where(feature => feature != null).ToArray();
-        int nullFeatureCount = allFeatures.Length - validFeatures.Length;
+            if (settings == null)
+            {
+                continue;
+            }
 
-        if (nullFeatureCount == 0)
-        {
-            Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
-            DiagnoseStandaloneRefreshCandidates(settings);
-            return;
-        }
+            int instanceId = settings.GetInstanceID();
+            if (!processedSettings.Add(instanceId))
+            {
+                continue;
+            }
 
-        // OpenXRSettings.features is internal in the package, so rebuild the serialized
-        // array through Unity's editor serialization API. Reconstructing the whole array is
-        // more reliable for a missing embedded subasset than deleting the broken PPtr slot.
-        var serializedSettings = new SerializedObject(settings);
-        SerializedProperty features = serializedSettings.FindProperty("features");
-        if (features == null || !features.isArray)
-        {
+            ++settingsObjects;
+
+            OpenXRFeature[] allFeatures = settings.GetFeatures();
+            OpenXRFeature[] validFeatures = allFeatures
+                .Where(feature => !ReferenceEquals(feature, null))
+                .ToArray();
+            int nullCount = allFeatures.Length - validFeatures.Length;
+
+            if (nullCount == 0)
+            {
+                continue;
+            }
+
+            ++groupsWithNulls;
+            removedNulls += nullCount;
+
+            string path = AssetDatabase.GetAssetPath(settings);
             Debug.LogWarning(
-                kLogPrefix + "Could not find the serialized Standalone OpenXR feature array.");
-            return;
-        }
-
-        features.ClearArray();
-        features.arraySize = validFeatures.Length;
-        for (int i = 0; i < validFeatures.Length; ++i)
-        {
-            features.GetArrayElementAtIndex(i).objectReferenceValue = validFeatures[i];
-        }
-
-        serializedSettings.ApplyModifiedProperties();
-        EditorUtility.SetDirty(settings);
-        AssetDatabase.SaveAssets();
-
-        serializedSettings.Update();
-        OpenXRFeature[] verifiedFeatures = settings.GetFeatures();
-        int remainingNulls = verifiedFeatures.Count(feature => feature == null);
-
-        Debug.LogWarning(
-            kLogPrefix +
-            $"Removed {nullFeatureCount} null/missing Standalone OpenXR feature " +
-            $"reference{(nullFeatureCount == 1 ? "" : "s")}; " +
-            $"verification found {remainingNulls} remaining null reference" +
-            $"{(remainingNulls == 1 ? "" : "s")}.");
-
-        if (remainingNulls != 0)
-        {
-            Debug.LogError(
                 kLogPrefix +
-                "Not diagnosing OpenXR feature refresh because the Standalone feature array " +
-                "still contains null references after reconstruction.");
-            return;
+                $"{group} OpenXR settings '{settings.name}' at '{path}' contain " +
+                $"{nullCount} null/missing feature reference{(nullCount == 1 ? "" : "s")}; rebuilding the feature array.");
+
+            var serializedSettings = new SerializedObject(settings);
+            SerializedProperty features = serializedSettings.FindProperty("features");
+            if (features == null || !features.isArray)
+            {
+                Debug.LogError(
+                    kLogPrefix +
+                    $"Could not find the serialized feature array for {group} OpenXR settings.");
+                continue;
+            }
+
+            features.ClearArray();
+            features.arraySize = validFeatures.Length;
+            for (int i = 0; i < validFeatures.Length; ++i)
+            {
+                features.GetArrayElementAtIndex(i).objectReferenceValue = validFeatures[i];
+            }
+
+            serializedSettings.ApplyModifiedProperties();
+            EditorUtility.SetDirty(settings);
         }
 
-        DiagnoseStandaloneRefreshCandidates(settings);
+        if (removedNulls > 0)
+        {
+            AssetDatabase.SaveAssets();
+        }
+
+        Debug.Log(
+            kLogPrefix +
+            $"Scanned {settingsObjects} OpenXR settings object{(settingsObjects == 1 ? "" : "s")}; " +
+            $"{groupsWithNulls} contained null feature references; removed {removedNulls} in total.");
+
+        // Keep the original Standalone-specific diagnostic because this is the target that
+        // matters for the macOS player and it also confirms whether Unity considers the
+        // Standalone feature set complete after cleanup.
+        OpenXRSettings standalone =
+            OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone);
+        if (standalone != null)
+        {
+            DiagnoseStandaloneRefreshCandidates(standalone);
+        }
     }
 
     static void DiagnoseStandaloneRefreshCandidates(OpenXRSettings settings)
     {
         var existingTypes = new HashSet<Type>(
             settings.GetFeatures()
-                .Where(feature => feature != null)
+                .Where(feature => !ReferenceEquals(feature, null))
                 .Select(feature => feature.GetType()));
 
         int missingEligibleTypes = 0;
