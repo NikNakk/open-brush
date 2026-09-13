@@ -14,12 +14,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TiltBrush;
 using UnityEditor;
 using UnityEditor.XR.OpenXR.Features;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
 
 /// <summary>
 /// Experimental macOS OpenXR build enablement.
@@ -84,9 +86,21 @@ static class MacOSOpenXRBuildSupport
             return;
         }
 
-        // OpenXRSettings.features is deliberately internal in the package. Use Unity's
-        // serialized editor API rather than depending on package-private implementation
-        // details or reflection to modify the persisted feature array.
+        // Use the package's public getter to capture the feature objects Unity can actually
+        // resolve. A missing embedded subasset appears as null here.
+        OpenXRFeature[] allFeatures = settings.GetFeatures();
+        OpenXRFeature[] validFeatures = allFeatures.Where(feature => feature != null).ToArray();
+        int nullFeatureCount = allFeatures.Length - validFeatures.Length;
+
+        if (nullFeatureCount == 0)
+        {
+            Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
+            return;
+        }
+
+        // OpenXRSettings.features is internal in the package, so rebuild the serialized
+        // array through Unity's editor serialization API. Reconstructing the whole array is
+        // more reliable for a missing embedded subasset than deleting the broken PPtr slot.
         var serializedSettings = new SerializedObject(settings);
         SerializedProperty features = serializedSettings.FindProperty("features");
         if (features == null || !features.isArray)
@@ -96,55 +110,52 @@ static class MacOSOpenXRBuildSupport
             return;
         }
 
-        int nullFeatureCount = 0;
-        for (int i = features.arraySize - 1; i >= 0; --i)
+        features.ClearArray();
+        features.arraySize = validFeatures.Length;
+        for (int i = 0; i < validFeatures.Length; ++i)
         {
-            SerializedProperty feature = features.GetArrayElementAtIndex(i);
-            if (feature.propertyType != SerializedPropertyType.ObjectReference ||
-                feature.objectReferenceValue != null)
-            {
-                continue;
-            }
-
-            ++nullFeatureCount;
-            int sizeBeforeDelete = features.arraySize;
-            features.DeleteArrayElementAtIndex(i);
-
-            // For object-reference arrays Unity can clear a live reference on the first
-            // delete and remove the slot on the second. These entries are already null,
-            // but handle both behaviours so the cleanup is deterministic across versions.
-            if (features.arraySize == sizeBeforeDelete && i < features.arraySize)
-            {
-                features.DeleteArrayElementAtIndex(i);
-            }
-        }
-
-        if (nullFeatureCount == 0)
-        {
-            Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
-            return;
+            features.GetArrayElementAtIndex(i).objectReferenceValue = validFeatures[i];
         }
 
         serializedSettings.ApplyModifiedProperties();
         EditorUtility.SetDirty(settings);
         AssetDatabase.SaveAssets();
 
+        // Refresh our SerializedObject and verify the persisted/in-memory settings no longer
+        // expose a null feature before entering Unity's refresh routine, whose implementation
+        // assumes every element is non-null.
+        serializedSettings.Update();
+        OpenXRFeature[] verifiedFeatures = settings.GetFeatures();
+        int remainingNulls = verifiedFeatures.Count(feature => feature == null);
+
         Debug.LogWarning(
             kLogPrefix +
             $"Removed {nullFeatureCount} null/missing Standalone OpenXR feature " +
-            $"reference{(nullFeatureCount == 1 ? "" : "s")}; refreshing feature metadata.");
+            $"reference{(nullFeatureCount == 1 ? "" : "s")}; " +
+            $"verification found {remainingNulls} remaining null reference" +
+            $"{(remainingNulls == 1 ? "" : "s")}.");
+
+        if (remainingNulls != 0)
+        {
+            Debug.LogError(
+                kLogPrefix +
+                "Not calling OpenXR feature refresh because the Standalone feature array " +
+                "still contains null references after reconstruction.");
+            return;
+        }
 
         try
         {
             // Let Unity recreate any legitimate feature subassets that are now absent and
             // update its derived feature metadata using the package's supported API.
             FeatureHelpers.RefreshFeatures(BuildTargetGroup.Standalone);
+            Debug.Log(kLogPrefix + "Standalone OpenXR feature metadata refresh completed.");
         }
         catch (Exception exception)
         {
             Debug.LogError(
                 kLogPrefix +
-                "OpenXR feature refresh still failed after removing null references:\n" +
+                "OpenXR feature refresh still failed after rebuilding the feature array:\n" +
                 exception);
         }
     }
