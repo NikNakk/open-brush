@@ -27,7 +27,7 @@ namespace TiltBrush
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void BeforeSceneLoad()
         {
-            string runtimeJson = Environment.GetEnvironmentVariable("XR_RUNTIME_JSON");
+            string runtimeJson = System.Environment.GetEnvironmentVariable("XR_RUNTIME_JSON");
             Debug.Log($"[OpenBrush XR] BeforeSceneLoad: platform={Application.platform}; " +
                       $"XR_RUNTIME_JSON={(string.IsNullOrEmpty(runtimeJson) ? "<unset>" : runtimeJson)}");
             LogXrManagementState("BeforeSceneLoad");
