@@ -40,10 +40,10 @@ static class MacOSOpenXRBuildSupport
     {
         EnableMacOsOpenXrBuildTarget();
 
-        // OpenXR 1.18's feature refresh assumes every serialized feature reference is
-        // non-null. Open Brush's upgraded settings can contain a missing subasset, which
-        // causes RefreshAllFeatureInfo() to throw before the Standalone OpenXR setup has
-        // been refreshed. Run after the editor has finished loading the package assets.
+        // OpenXR 1.18's feature refresh assumes every feature object it considers is
+        // non-null. Run after the editor has finished loading package assets so we can both
+        // repair persisted missing references and diagnose feature types that Unity itself
+        // cannot instantiate during RefreshAllFeatureInfo().
         EditorApplication.delayCall += SanitizeStandaloneOpenXrFeatures;
     }
 
@@ -86,8 +86,6 @@ static class MacOSOpenXRBuildSupport
             return;
         }
 
-        // Use the package's public getter to capture the feature objects Unity can actually
-        // resolve. A missing embedded subasset appears as null here.
         OpenXRFeature[] allFeatures = settings.GetFeatures();
         OpenXRFeature[] validFeatures = allFeatures.Where(feature => feature != null).ToArray();
         int nullFeatureCount = allFeatures.Length - validFeatures.Length;
@@ -95,6 +93,7 @@ static class MacOSOpenXRBuildSupport
         if (nullFeatureCount == 0)
         {
             Debug.Log(kLogPrefix + "Standalone OpenXR feature list contains no null references.");
+            DiagnoseStandaloneRefreshCandidates(settings);
             return;
         }
 
@@ -121,9 +120,6 @@ static class MacOSOpenXRBuildSupport
         EditorUtility.SetDirty(settings);
         AssetDatabase.SaveAssets();
 
-        // Refresh our SerializedObject and verify the persisted/in-memory settings no longer
-        // expose a null feature before entering Unity's refresh routine, whose implementation
-        // assumes every element is non-null.
         serializedSettings.Update();
         OpenXRFeature[] verifiedFeatures = settings.GetFeatures();
         int remainingNulls = verifiedFeatures.Count(feature => feature == null);
@@ -139,24 +135,114 @@ static class MacOSOpenXRBuildSupport
         {
             Debug.LogError(
                 kLogPrefix +
-                "Not calling OpenXR feature refresh because the Standalone feature array " +
+                "Not diagnosing OpenXR feature refresh because the Standalone feature array " +
                 "still contains null references after reconstruction.");
             return;
         }
 
-        try
+        DiagnoseStandaloneRefreshCandidates(settings);
+    }
+
+    static void DiagnoseStandaloneRefreshCandidates(OpenXRSettings settings)
+    {
+        var existingTypes = new HashSet<Type>(
+            settings.GetFeatures()
+                .Where(feature => feature != null)
+                .Select(feature => feature.GetType()));
+
+        int missingEligibleTypes = 0;
+        int suspiciousTypes = 0;
+
+        foreach (Type featureType in TypeCache.GetTypesWithAttribute<OpenXRFeatureAttribute>())
         {
-            // Let Unity recreate any legitimate feature subassets that are now absent and
-            // update its derived feature metadata using the package's supported API.
-            FeatureHelpers.RefreshFeatures(BuildTargetGroup.Standalone);
-            Debug.Log(kLogPrefix + "Standalone OpenXR feature metadata refresh completed.");
+            OpenXRFeatureAttribute attribute;
+            try
+            {
+                attribute = featureType.GetCustomAttribute<OpenXRFeatureAttribute>(true);
+            }
+            catch (Exception exception)
+            {
+                ++suspiciousTypes;
+                Debug.LogError(
+                    kLogPrefix +
+                    $"Could not read OpenXRFeatureAttribute for {featureType.FullName}: " +
+                    $"{exception.GetType().Name}: {exception.Message}");
+                continue;
+            }
+
+            if (attribute == null)
+            {
+                continue;
+            }
+
+            BuildTargetGroup[] groups = attribute.BuildTargetGroups;
+            if (groups != null && groups.Length > 0 &&
+                !groups.Contains(BuildTargetGroup.Standalone))
+            {
+                continue;
+            }
+
+            if (existingTypes.Contains(featureType))
+            {
+                continue;
+            }
+
+            ++missingEligibleTypes;
+            string reason = null;
+
+            if (!typeof(OpenXRFeature).IsAssignableFrom(featureType))
+            {
+                reason = "is marked as an OpenXR feature but does not derive from OpenXRFeature";
+            }
+            else if (featureType.IsAbstract)
+            {
+                reason = "is abstract";
+            }
+            else if (featureType.ContainsGenericParameters)
+            {
+                reason = "contains unbound generic parameters";
+            }
+            else
+            {
+                OpenXRFeature probe = null;
+                try
+                {
+                    probe = ScriptableObject.CreateInstance(featureType) as OpenXRFeature;
+                    if (probe == null)
+                    {
+                        reason = "ScriptableObject.CreateInstance returned null";
+                    }
+                }
+                catch (Exception exception)
+                {
+                    reason =
+                        $"ScriptableObject.CreateInstance threw {exception.GetType().Name}: " +
+                        exception.Message;
+                }
+                finally
+                {
+                    if (probe != null)
+                    {
+                        UnityEngine.Object.DestroyImmediate(probe);
+                    }
+                }
+            }
+
+            if (reason != null)
+            {
+                ++suspiciousTypes;
+                Debug.LogError(
+                    kLogPrefix +
+                    $"OpenXR refresh candidate {featureType.FullName} " +
+                    $"({featureType.Assembly.GetName().Name}) {reason}. " +
+                    "This type can cause Unity OpenXR 1.18 RefreshAllFeatureInfo() to add a null feature and then throw.");
+            }
         }
-        catch (Exception exception)
-        {
-            Debug.LogError(
-                kLogPrefix +
-                "OpenXR feature refresh still failed after rebuilding the feature array:\n" +
-                exception);
-        }
+
+        Debug.Log(
+            kLogPrefix +
+            $"OpenXR refresh candidate scan: {missingEligibleTypes} Standalone-eligible feature " +
+            $"type{(missingEligibleTypes == 1 ? "" : "s")} absent from the settings; " +
+            $"{suspiciousTypes} suspicious.");
     }
 }
