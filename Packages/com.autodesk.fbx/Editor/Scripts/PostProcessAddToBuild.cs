@@ -61,6 +61,16 @@ namespace Autodesk.Fbx
                 return;
             }
 
+            // The embedded package may not include a macOS wrapper built with Open Brush's
+            // custom bindings. A standalone Autodesk SDK or stock Unity wrapper is insufficient.
+            if (target == BuildTarget.StandaloneOSX && !Directory.Exists(sourcePath))
+            {
+                Debug.LogWarningFormat(
+                    "FBX runtime support is unavailable: macOS native bundle not found at '{0}'. " +
+                    "See Support/fbx/README.md to build the compatible wrapper.", sourcePath);
+                return;
+            }
+
             if (!Directory.Exists(destPath))
             {
                 Directory.CreateDirectory(destPath);
