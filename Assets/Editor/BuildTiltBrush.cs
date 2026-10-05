@@ -110,6 +110,7 @@ static class BuildTiltBrush
 
             // OpenXR
             new KeyValuePair<XrSdkMode, BuildTarget>(XrSdkMode.OpenXR, BuildTarget.StandaloneWindows64),
+            new KeyValuePair<XrSdkMode, BuildTarget>(XrSdkMode.OpenXR, BuildTarget.StandaloneOSX),
             new KeyValuePair<XrSdkMode, BuildTarget>(XrSdkMode.OpenXR, BuildTarget.Android),
             // iOS has no Unity OpenXR loader. Keeping the OpenXR build mode preserves the normal
             // UnityXR runtime path, which falls back to view-only mode when no loader initializes.
