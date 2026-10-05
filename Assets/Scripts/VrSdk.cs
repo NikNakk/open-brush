@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using OpenXR.Extensions;
@@ -99,6 +100,8 @@ namespace TiltBrush
 
         private Action[] m_OldOnPoseApplied;
 
+        public bool IsXrStartupPending { get; private set; }
+
         private bool m_NeedsToAttachConsoleScript;
         private TrTransform? m_TrackingBackupXf;
 
@@ -159,29 +162,7 @@ namespace TiltBrush
             {
                 App.Config.m_SdkMode = SdkMode.Monoscopic;
             }
-            else if (!disableXr)
-            {
-                // We no longer initialize XR SDKs automatically
-                // so we need to do it manually
-
-                // Null checks are for Linux view mode
-                // TODO: Need to investigate exactly why Linux hits an NRE here
-                // When other platforms don't
-                XRGeneralSettings.Instance?.Manager?.InitializeLoaderSync();
-
-                if (XRGeneralSettings.Instance?.Manager?.activeLoader != null)
-                {
-                    // Configure supported eye-buffer MSAA before the first XR surfaces
-                    // are allocated, rather than resizing them during startup rendering.
-                    var quality = FindFirstObjectByType<QualityControls>();
-                    var rendering = FindFirstObjectByType<UrpPostProcessingController>();
-                    if (quality != null && rendering != null)
-                    {
-                        rendering.PrepareSession(quality);
-                    }
-                    XRGeneralSettings.Instance?.Manager?.StartSubsystems();
-                }
-            }
+            IsXrStartupPending = !forceMonoscopic && !disableXr;
 
             if (App.Config.m_SdkMode == SdkMode.UnityXR)
             {
@@ -207,7 +188,10 @@ namespace TiltBrush
                     SetUnityXRControllerStyle(tryGetUnityXRController);
                 }
 
-                SetPassthroughStrategy();
+                if (!IsXrStartupPending)
+                {
+                    SetPassthroughStrategy();
+                }
             }
             else if (App.Config.m_SdkMode == SdkMode.Monoscopic)
             {
@@ -237,8 +221,37 @@ namespace TiltBrush
 
         }
 
-        void Start()
+        IEnumerator Start()
         {
+            if (IsXrStartupPending)
+            {
+                // XR Management requires manual initialization after Start has completed,
+                // when Unity's graphics device is ready on every platform.
+                yield return null;
+                try
+                {
+                    var manager = XRGeneralSettings.Instance?.Manager;
+                    manager?.InitializeLoaderSync();
+                    if (manager?.activeLoader != null)
+                    {
+                        // Configure eye-buffer MSAA before allocating the first XR surfaces.
+                        var quality = FindFirstObjectByType<QualityControls>();
+                        var rendering = FindFirstObjectByType<UrpPostProcessingController>();
+                        if (quality != null && rendering != null)
+                        {
+                            rendering.PrepareSession(quality);
+                        }
+                        manager.StartSubsystems();
+                        SetPassthroughStrategy();
+                    }
+                }
+                finally
+                {
+                    // App must wait for the attempt before deciding whether to use view-only mode.
+                    IsXrStartupPending = false;
+                }
+            }
+
             if (App.Config.m_SdkMode == SdkMode.UnityXR)
             {
                 Application.onBeforeRender += OnNewPoses;

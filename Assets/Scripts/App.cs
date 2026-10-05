@@ -196,6 +196,8 @@ namespace TiltBrush
 
         public event Action<AppState, AppState> StateChanged;
 
+        private bool m_StartupComplete;
+
         // ------------------------------------------------------------
         // Inspector data
         // ------------------------------------------------------------
@@ -697,8 +699,13 @@ namespace TiltBrush
             return "";
         }
 
-        void Start()
+        IEnumerator Start()
         {
+            while (VrSdk.IsXrStartupPending)
+            {
+                yield return null;
+            }
+
             // Use of ControllerConsoleScript must wait until Start()
             ControllerConsoleScript.m_Instance.AddNewLine(GetStartupString());
 
@@ -849,6 +856,7 @@ namespace TiltBrush
             {
                 StateChanged += AutoProfileOnStartAndQuit;
             }
+            m_StartupComplete = true;
         }
 
         private void AutoProfileOnStartAndQuit(AppState oldState, AppState newState)
@@ -873,6 +881,11 @@ namespace TiltBrush
 
         void Update()
         {
+            if (!m_StartupComplete)
+            {
+                return;
+            }
+
 #if UNITY_EDITOR
             // All changes to Scene transform must go through Coords.cs
             if (m_SceneTransform.hasChanged)

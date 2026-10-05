@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections;
 using UnityEngine;
 using OpenXR.Extensions;
 using Unity.XR.CompositionLayers;
@@ -22,8 +23,13 @@ namespace TiltBrush
     {
         [SerializeField] CompositionLayer m_PassthroughLayer;
 
-        void Start()
+        IEnumerator Start()
         {
+            while (App.VrSdk.IsXrStartupPending)
+            {
+                yield return null;
+            }
+
             if (App.VrSdk.PassthroughMode == PassthroughMode.FBPassthrough)
             {
                 m_PassthroughLayer.enabled = true;

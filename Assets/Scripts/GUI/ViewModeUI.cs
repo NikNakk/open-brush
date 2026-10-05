@@ -1,3 +1,4 @@
+using System.Collections;
 using TiltBrush;
 using UnityEngine;
 
@@ -15,8 +16,16 @@ public class ViewModeUI : MonoBehaviour
 
     void Awake()
     {
-        m_UiRoot.SetActive(!App.VrSdk.IsHmdInitialized() || App.Config.m_SdkMode == SdkMode.Monoscopic);
         m_Instance = this;
+    }
+
+    IEnumerator Start()
+    {
+        while (App.VrSdk.IsXrStartupPending)
+        {
+            yield return null;
+        }
+        m_UiRoot.SetActive(!App.VrSdk.IsHmdInitialized() || App.Config.m_SdkMode == SdkMode.Monoscopic);
     }
 
     void Update()
