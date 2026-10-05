@@ -242,6 +242,15 @@ namespace TiltBrush
                             rendering.PrepareSession(quality);
                         }
                         manager.StartSubsystems();
+
+                        // XROrigin may have completed Start before the XR input subsystem existed.
+                        // Reapply its configured mode so Unity sets the correct camera height offset.
+                        var xrOrigin = m_VrCamera.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+                        if (xrOrigin != null)
+                        {
+                            var originMode = xrOrigin.RequestedTrackingOriginMode;
+                            xrOrigin.RequestedTrackingOriginMode = originMode;
+                        }
                         SetPassthroughStrategy();
                     }
                 }
