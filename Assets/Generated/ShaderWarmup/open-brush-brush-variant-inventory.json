@@ -1,7 +1,7 @@
 ﻿{
-    "generatedAtUtc": "2026-09-06T11:13:02.9580495Z",
+    "generatedAtUtc": "2026-09-13T22:37:36.2363760Z",
     "unityVersion": "6000.6.0f1",
-    "materialStateCount": 865,
+    "materialStateCount": 870,
     "materialStates": [
         {
             "source": "Manifest:CompatibilityBrushes",
@@ -13713,6 +13713,24 @@
             "notes": "base"
         },
         {
+            "source": "Manifest:CompatibilityBrushes",
+            "brushAssetPath": "Assets/Resources/Brushes/Basic/Leaves/LeavesSingleSided.asset",
+            "brushGuid": "ea19de07-d0c0-4484-9198-18489a3c1487",
+            "brushDurableName": "Leaves",
+            "materialPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/8_Experimental/Leaves2/Leaves2.mat",
+            "materialName": "Leaves2",
+            "shaderPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/StandardSingleSided.shadergraph",
+            "shaderName": "Shader Graphs/StandardSingleSided",
+            "keywords": [
+                "AUDIO_REACTIVE",
+                "_EMISSION"
+            ],
+            "renderQueue": 2450,
+            "globalIlluminationFlags": 3,
+            "doubleSidedGI": false,
+            "notes": "runtime keyword AUDIO_REACTIVE"
+        },
+        {
             "source": "Manifest_Experimental:Brushes",
             "brushAssetPath": "Assets/Resources/X/Brushes/Test/Leaves2.asset",
             "brushGuid": "7259cce5-41c1-ec74-c885-78af28a31d95",
@@ -13747,6 +13765,24 @@
             "globalIlluminationFlags": 3,
             "doubleSidedGI": false,
             "notes": "runtime keyword AUDIO_REACTIVE"
+        },
+        {
+            "source": "Manifest:CompatibilityBrushes",
+            "brushAssetPath": "Assets/Resources/Brushes/Basic/Leaves/LeavesSingleSided.asset",
+            "brushGuid": "ea19de07-d0c0-4484-9198-18489a3c1487",
+            "brushDurableName": "Leaves",
+            "materialPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/8_Experimental/Leaves2/Leaves2.mat",
+            "materialName": "Leaves2",
+            "shaderPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/StandardSingleSided.shadergraph",
+            "shaderName": "Shader Graphs/StandardSingleSided",
+            "keywords": [
+                "HIGHLIGHT_ON",
+                "_EMISSION"
+            ],
+            "renderQueue": 2450,
+            "globalIlluminationFlags": 3,
+            "doubleSidedGI": false,
+            "notes": "runtime keyword HIGHLIGHT_ON"
         },
         {
             "source": "Manifest_Experimental:Brushes",
@@ -13785,6 +13821,24 @@
             "notes": "runtime keyword HIGHLIGHT_ON"
         },
         {
+            "source": "Manifest:CompatibilityBrushes",
+            "brushAssetPath": "Assets/Resources/Brushes/Basic/Leaves/LeavesSingleSided.asset",
+            "brushGuid": "ea19de07-d0c0-4484-9198-18489a3c1487",
+            "brushDurableName": "Leaves",
+            "materialPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/8_Experimental/Leaves2/Leaves2.mat",
+            "materialName": "Leaves2",
+            "shaderPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/StandardSingleSided.shadergraph",
+            "shaderName": "Shader Graphs/StandardSingleSided",
+            "keywords": [
+                "SELECTION_ON",
+                "_EMISSION"
+            ],
+            "renderQueue": 2450,
+            "globalIlluminationFlags": 3,
+            "doubleSidedGI": false,
+            "notes": "runtime keyword SELECTION_ON"
+        },
+        {
             "source": "Manifest_Experimental:Brushes",
             "brushAssetPath": "Assets/Resources/X/Brushes/Test/Leaves2.asset",
             "brushGuid": "7259cce5-41c1-ec74-c885-78af28a31d95",
@@ -13821,6 +13875,24 @@
             "notes": "runtime keyword SELECTION_ON"
         },
         {
+            "source": "Manifest:CompatibilityBrushes",
+            "brushAssetPath": "Assets/Resources/Brushes/Basic/Leaves/LeavesSingleSided.asset",
+            "brushGuid": "ea19de07-d0c0-4484-9198-18489a3c1487",
+            "brushDurableName": "Leaves",
+            "materialPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/8_Experimental/Leaves2/Leaves2.mat",
+            "materialName": "Leaves2",
+            "shaderPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/StandardSingleSided.shadergraph",
+            "shaderName": "Shader Graphs/StandardSingleSided",
+            "keywords": [
+                "SHADER_SCRIPTING_ON",
+                "_EMISSION"
+            ],
+            "renderQueue": 2450,
+            "globalIlluminationFlags": 3,
+            "doubleSidedGI": false,
+            "notes": "runtime keyword SHADER_SCRIPTING_ON"
+        },
+        {
             "source": "Manifest_Experimental:Brushes",
             "brushAssetPath": "Assets/Resources/X/Brushes/Test/Leaves2.asset",
             "brushGuid": "7259cce5-41c1-ec74-c885-78af28a31d95",
@@ -13855,6 +13927,23 @@
             "globalIlluminationFlags": 3,
             "doubleSidedGI": false,
             "notes": "runtime keyword SHADER_SCRIPTING_ON"
+        },
+        {
+            "source": "Manifest:CompatibilityBrushes",
+            "brushAssetPath": "Assets/Resources/Brushes/Basic/Leaves/LeavesSingleSided.asset",
+            "brushGuid": "ea19de07-d0c0-4484-9198-18489a3c1487",
+            "brushDurableName": "Leaves",
+            "materialPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/8_Experimental/Leaves2/Leaves2.mat",
+            "materialName": "Leaves2",
+            "shaderPath": "Packages/com.icosa.open-brush-unity-tools/Runtime/Shaders/StandardSingleSided.shadergraph",
+            "shaderName": "Shader Graphs/StandardSingleSided",
+            "keywords": [
+                "_EMISSION"
+            ],
+            "renderQueue": 2450,
+            "globalIlluminationFlags": 3,
+            "doubleSidedGI": false,
+            "notes": "base"
         },
         {
             "source": "Manifest_Experimental:Brushes",

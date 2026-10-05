@@ -81,33 +81,6 @@ ShaderVariantCollection:
         passType: 13
       - keywords: SHADER_SCRIPTING_ON
         passType: 13
-  - first: {fileID: -6465566751694194690, guid: 286c16fdd0381854cb875392608b62df, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 0
-      - keywords: HIGHLIGHT_ON
-        passType: 0
-      - keywords: SELECTION_ON
-        passType: 0
-      - keywords: SHADER_SCRIPTING_ON
-        passType: 0
-      - keywords: 
-        passType: 4
-      - keywords: HIGHLIGHT_ON
-        passType: 4
-      - keywords: SELECTION_ON
-        passType: 4
-      - keywords: SHADER_SCRIPTING_ON
-        passType: 4
-      - keywords: 
-        passType: 13
-      - keywords: HIGHLIGHT_ON
-        passType: 13
-      - keywords: SELECTION_ON
-        passType: 13
-      - keywords: SHADER_SCRIPTING_ON
-        passType: 13
   - first: {fileID: 4800000, guid: aed6c5abd15318e448cc6f01d2ac0dd1, type: 3}
     second:
       variants:
@@ -177,13 +150,6 @@ ShaderVariantCollection:
       - keywords: 
         passType: 0
       - keywords: 
-        passType: 13
-  - first: {fileID: 4800000, guid: 096108490caa83c46b96a1e171214c8b, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 13
-      - keywords: SHADER_SCRIPTING_ON
         passType: 13
   - first: {fileID: -6465566751694194690, guid: bed5c8c09a625664488d59b68d51690d, type: 3}
     second:
@@ -341,6 +307,28 @@ ShaderVariantCollection:
       - keywords: SELECTION_ON
         passType: 13
       - keywords: SHADER_SCRIPTING_ON
+        passType: 13
+  - first: {fileID: -6465566751694194690, guid: e0cb37d325cd4866a4f5cad4cb226efd, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+      - keywords: 
+        passType: 13
+      - keywords: HIGHLIGHT_ON
+        passType: 13
+      - keywords: SELECTION_ON
+        passType: 13
+  - first: {fileID: -6465566751694194690, guid: 0de0df21bd564d31b79649d785098ebb, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+      - keywords: 
+        passType: 13
+      - keywords: HIGHLIGHT_ON
+        passType: 13
+      - keywords: SELECTION_ON
         passType: 13
   - first: {fileID: 4800000, guid: 9f5c12f3acbb626408e96c20bb9f072a, type: 3}
     second:
@@ -603,6 +591,33 @@ ShaderVariantCollection:
         passType: 0
       - keywords: SHADER_SCRIPTING_ON
         passType: 0
+  - first: {fileID: -6465566751694194690, guid: 286c16fdd0381854cb875392608b62df, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+      - keywords: HIGHLIGHT_ON
+        passType: 0
+      - keywords: SELECTION_ON
+        passType: 0
+      - keywords: SHADER_SCRIPTING_ON
+        passType: 0
+      - keywords: 
+        passType: 4
+      - keywords: HIGHLIGHT_ON
+        passType: 4
+      - keywords: SELECTION_ON
+        passType: 4
+      - keywords: SHADER_SCRIPTING_ON
+        passType: 4
+      - keywords: 
+        passType: 13
+      - keywords: HIGHLIGHT_ON
+        passType: 13
+      - keywords: SELECTION_ON
+        passType: 13
+      - keywords: SHADER_SCRIPTING_ON
+        passType: 13
   - first: {fileID: -6465566751694194690, guid: 378dd8a90f17baf4aae7a033627296b4, type: 3}
     second:
       variants:
@@ -631,6 +646,17 @@ ShaderVariantCollection:
       - keywords: SELECTION_ON
         passType: 13
       - keywords: SHADER_SCRIPTING_ON
+        passType: 13
+  - first: {fileID: -6465566751694194690, guid: 5d107b5d6a4146d0b79bb309463e508a, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+      - keywords: 
+        passType: 13
+      - keywords: HIGHLIGHT_ON
+        passType: 13
+      - keywords: SELECTION_ON
         passType: 13
   - first: {fileID: 4800000, guid: c8def03accc4e8341b9fa2db8eb6ff87, type: 3}
     second:
@@ -966,37 +992,4 @@ ShaderVariantCollection:
       - keywords: 
         passType: 13
       - keywords: SHADER_SCRIPTING_ON
-        passType: 13
-  - first: {fileID: -6465566751694194690, guid: 5d107b5d6a4146d0b79bb309463e508a, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 0
-      - keywords: 
-        passType: 13
-      - keywords: HIGHLIGHT_ON
-        passType: 13
-      - keywords: SELECTION_ON
-        passType: 13
-  - first: {fileID: -6465566751694194690, guid: 0de0df21bd564d31b79649d785098ebb, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 0
-      - keywords: 
-        passType: 13
-      - keywords: HIGHLIGHT_ON
-        passType: 13
-      - keywords: SELECTION_ON
-        passType: 13
-  - first: {fileID: -6465566751694194690, guid: e0cb37d325cd4866a4f5cad4cb226efd, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 0
-      - keywords: 
-        passType: 13
-      - keywords: HIGHLIGHT_ON
-        passType: 13
-      - keywords: SELECTION_ON
         passType: 13
